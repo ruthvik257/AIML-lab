@@ -1,0 +1,40 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+
+from IPython.core.interactiveshell import InteractiveShell
+InteractiveShell.ast_node_interactivity = "all"
+data = np.random.normal(0,1, size = 1000000) # 1,000,000
+_ = plt.hist(data, bins = 123) # bins sets the granularity
+def detect_outliers(data, threshold = 4):
+    outliers=[]
+    mean, std = np.mean(data), np.std(data)
+    
+    for i in data:
+        z_score = (i - mean)/std 
+        if np.abs(z_score) > threshold:
+            outliers.append(i)
+            
+    return outliers
+
+outliers = detect_outliers(data)
+print(len(outliers)/len(data) * 100, '%')
+_ = plt.hist(outliers, bins = 1234) # Don't be mislead by the hight
+q1, q2, q3 = np.quantile(data, [0.25, 0.5, 0.75])
+print(q1, q2, q3)
+IQR = q3 - q1 
+lower_bound = q1 - 1.5 * IQR
+upper_bound = q3 + 1.5 * IQR
+print(lower_bound, upper_bound)
+def detect_outliers_IQR(data, lower_bound, upper_bound, multiplier = 1.5):
+    '''Outliers are defined as mild above Q3 + 1.5 IQR and extreme above Q3 + 3 IQR. Potential `multiplers` = {1.5, 3...}'''
+    q1, q2, q3 = np.quantile(data, [0.25, 0.5, 0.75])
+    IQR = q3 - q1 
+    lower_bound, upper_bound = q1 - multiplier * IQR, q3 + multiplier * IQR
+    return[data_point for data_point in data if data_point < lower_bound or data_point > upper_bound]
+
+outliers = detect_outliers_IQR(data, lower_bound, upper_bound, multiplier = 2.25)
+_ = plt.hist(outliers, bins = 123) # Don't be mislead by the hight
+print('Contaminated {:.4}%'.format(len(outliers)/len(data) * 100))
